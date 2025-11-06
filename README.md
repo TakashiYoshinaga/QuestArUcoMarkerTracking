@@ -23,7 +23,7 @@ When opening the project for the first time, you will likely encounter errors. T
 **Please ignore the errors initially, proceed to open the project, and install OpenCV for Unity manually.**
 
 This project uses **OpenCV for Unity**.  
-Please purchase and install it from the Unity Asset Store:  
+Please **PURCHASE**e and install it from the Unity Asset Store:  
 [OpenCV for Unity](https://assetstore.unity.com/packages/tools/integration/opencv-for-unity-21088?locale=en-US)
 
 Tested with **OpenCV for Unity v2.6.5**.
