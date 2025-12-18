@@ -1,7 +1,15 @@
 # Quest ArUco Marker Tracking
 
-This repository enables **single and multi-marker detection and tracking** using OpenCV with the **Passthrough Camera API** for Meta Quest 3/3S.  
-It provides sample scenes that support both ArUco(Single/Multi) and ChArUco(Single) markers for augmented reality applications on Quest devices.  
+This repository enables **single and multi-marker detection and tracking** using OpenCV for Meta Quest 3/3S.  
+It provides sample scenes that support both ArUco(Single/Multi) and ChArUco(Single) markers for augmented reality applications on Quest devices.
+
+## Project Structure
+
+This repository contains two versions of the project:
+
+- **QuestMarkerTracking_New**: Uses the **Passthrough Camera Access** component introduced in Meta XR SDK v83 for simpler camera image access.
+
+- **QuestMarkerTracking_Old**: Uses the previous **WebCamTexture**-based approach.  
   
 For a demonstration, check out the following videos:
 
@@ -28,9 +36,18 @@ Please **PURCHASE** and install it from the Unity Asset Store:
 
 Tested with **OpenCV for Unity v2.6.5**.
 
+### SDK Requirements
+- **QuestMarkerTracking_New**: Meta XR SDK v83 or later (for Passthrough Camera Access support)
+- **QuestMarkerTracking_Old**: Compatible with earlier versions of Meta XR SDK
+
 ---
 
 ## Usage
+
+### Selecting a Project Version
+Choose the appropriate project folder based on your requirements:
+- Open **QuestMarkerTracking_New** for the latest implementation using Passthrough Camera Access
+- Open **QuestMarkerTracking_Old** for the WebCamTexture-based approach
 
 ### Marker Preparation
 To use this project, please download and install the required marker files from the following links:
@@ -39,6 +56,7 @@ To use this project, please download and install the required marker files from 
 - **ChArUco Marker**: [ChArUcoMarker.pdf](https://github.com/TakashiYoshinaga/QuestArUcoMarkerTracking/blob/main/ChArUcoMarker.pdf)
 
 ### Unity Scenes
+Both project versions contain the following scenes:
 
 - **ArUco Marker Tracking (Single & Multi)**: `ArUcoMarkerTracking.unity`  
 - **ChArUco Marker Tracking**: `ChArUcoMarkerTracking.unity`
