@@ -1,13 +1,10 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
+// Copyright (c) Takashi Yoshinaga. All rights reserved.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using Meta.XR;
-using Meta.XR.Samples;
 using UnityEngine;
-using UnityEngine.Assertions;
-using UnityEngine.UI;
 
 namespace TryAR.MarkerTracking
 {
@@ -30,6 +27,7 @@ namespace TryAR.MarkerTracking
             public GameObject gameObject;
         }
 
+        [Header("Passthrough Camera")]
         [SerializeField]
         private PassthroughCameraAccess m_passthroughCameraAccess;
 
@@ -37,17 +35,19 @@ namespace TryAR.MarkerTracking
         [SerializeField] private ArUcoMarkerTracking m_arucoMarkerTracking;
         [SerializeField, Tooltip("List of marker IDs mapped to their corresponding GameObjects")]
         private List<MarkerGameObjectPair> m_markerGameObjectPairs = new List<MarkerGameObjectPair>();
-        private Dictionary<int, GameObject> m_markerGameObjectDictionary = new Dictionary<int, GameObject>();
-        private bool m_showCameraCanvas = true;
+        [SerializeField] MeshRenderer m_debugRenderer;
 
+        private Dictionary<int, GameObject> m_markerGameObjectDictionary = new Dictionary<int, GameObject>();
+       
         private Texture2D m_resultTexture;
 
         private Transform m_cameraAnchor;
 
-        public MeshRenderer m_debugRenderer;
+        
+        private bool m_showRecogResult = false;
 
         /// <summary>
-        /// Initializes the camera, permissions, and marker tracking system.
+        /// Initializes the camera anchor, camera, and marker tracking system.
         /// </summary>
         private IEnumerator Start()
         {
@@ -73,7 +73,10 @@ namespace TryAR.MarkerTracking
             InitializeMarkerTracking();
             
             // Set initial visibility states
-            SetMarkerObjectsVisibility(true);
+            if(m_debugRenderer!=null){
+                m_debugRenderer.gameObject.SetActive(m_showRecogResult);
+            }
+            SetMarkerObjectsVisibility(!m_showRecogResult);
         }
 
 
@@ -100,13 +103,12 @@ namespace TryAR.MarkerTracking
         }
 
         /// <summary>
-        /// Updates camera poses, detects markers, and handles input for toggling visualization mode.
+        /// Updates camera poses, processes marker tracking, and handles input for toggling visualization mode.
         /// </summary>
         private void Update()
         {
             // Skip if camera or tracking system isn't ready
-           // if (m_webCamTextureManager.WebCamTexture == null || !m_arucoMarkerTracking.IsReady)
-           if(m_passthroughCameraAccess==null || !m_passthroughCameraAccess.IsPlaying || !m_arucoMarkerTracking.IsReady)
+            if(m_passthroughCameraAccess==null || !m_passthroughCameraAccess.IsPlaying || !m_arucoMarkerTracking.IsReady)
                 return;
 
             // Toggle between camera view and AR visualization on button press
@@ -124,16 +126,19 @@ namespace TryAR.MarkerTracking
         }
 
         /// <summary>
-        /// Handles button input to toggle between camera view and AR visualization.
+        /// Handles button input to toggle between recognition result display and AR marker objects.
         /// </summary>
         private void HandleVisualizationToggle()
         {
-            // if (OVRInput.GetDown(OVRInput.Button.One))
-            // {
-            //     m_showCameraCanvas = !m_showCameraCanvas;
-            //     m_cameraCanvas.gameObject.SetActive(m_showCameraCanvas);
-            //     SetMarkerObjectsVisibility(!m_showCameraCanvas);
-            // }
+            if(m_debugRenderer==null)
+                return;
+
+            if (OVRInput.GetDown(OVRInput.Button.One))
+            {
+                m_showRecogResult = !m_showRecogResult;
+                m_debugRenderer.gameObject.SetActive(m_showRecogResult);
+                SetMarkerObjectsVisibility(!m_showRecogResult);
+            }
         }
 
         /// <summary>
@@ -178,7 +183,7 @@ namespace TryAR.MarkerTracking
         /// </summary>
         private void InitializeMarkerTracking()
         {
-            // Step 1: Set up camera parameters for tracking
+            // Step 1: Get camera intrinsic parameters
             // These intrinsic parameters are essential for accurate marker pose estimation
             var intrinsics = m_passthroughCameraAccess.Intrinsics;
             var cx = intrinsics.PrincipalPoint.x;  // Principal point X (optical center)
@@ -188,11 +193,11 @@ namespace TryAR.MarkerTracking
             var width = intrinsics.SensorResolution.x;   // Image width
             var height = intrinsics.SensorResolution.y;  // Image height
             
-            // Get current camera resolution
+            // Step 2: Scale parameters to match current camera resolution
             var currentResolution = m_passthroughCameraAccess.CurrentResolution;
             Debug.Log($"Camera Intrinsics - fx: {fx}, fy: {fy}, cx: {cx}, cy: {cy}, width: {width}, height: {height}");
             Debug.Log($"Current Camera Resolution - width: {currentResolution.x}, height: {currentResolution.y}");
-            // Scale parameters if resolution differs from intrinsic calibration
+            
             if (currentResolution.x != width || currentResolution.y != height)
             {
                 float scaleX = (float)currentResolution.x / width;
@@ -205,15 +210,14 @@ namespace TryAR.MarkerTracking
                 height = currentResolution.y;
             }
 
-
-            // Initialize the ArUco tracking with camera parameters
+            // Step 3: Initialize the ArUco tracking with camera parameters
             m_arucoMarkerTracking.Initialize(width, height, cx, cy, fx, fy);
             
-            // Step 2: Build marker dictionary from serialized list
+            // Step 4: Build marker dictionary from serialized list
             // This maps marker IDs to the GameObjects that should be positioned at each marker
             BuildMarkerDictionary();
             
-            // Step 3: Set up texture for visualization
+            // Step 5: Set up texture for visualization
             ConfigureResultTexture(width, height);
         }
 
@@ -248,32 +252,10 @@ namespace TryAR.MarkerTracking
         }
 
         /// <summary>
-        /// Calculates the dimensions of the canvas based on the distance from the camera origin and the camera resolution.
-        /// </summary>
-        // private void ScaleCameraCanvas()
-        // {
-        //     var cameraCanvasRectTransform = m_cameraCanvas.GetComponentInChildren<RectTransform>();
-            
-        //     // Calculate field of view based on camera parameters
-        //     var leftSidePointInCamera = PassthroughCameraUtils.ScreenPointToRayInCamera(CameraEye, new Vector2Int(0, CameraResolution.y / 2));
-        //     var rightSidePointInCamera = PassthroughCameraUtils.ScreenPointToRayInCamera(CameraEye, new Vector2Int(CameraResolution.x, CameraResolution.y / 2));
-        //     var horizontalFoVDegrees = Vector3.Angle(leftSidePointInCamera.direction, rightSidePointInCamera.direction);
-        //     var horizontalFoVRadians = horizontalFoVDegrees / 180 * Math.PI;
-            
-        //     // Calculate canvas size to match camera view
-        //     var newCanvasWidthInMeters = 2 * m_canvasDistance * Math.Tan(horizontalFoVRadians / 2);
-        //     var localScale = (float)(newCanvasWidthInMeters / cameraCanvasRectTransform.sizeDelta.x);
-        //     cameraCanvasRectTransform.localScale = new Vector3(localScale, localScale, localScale);
-        // }
-
-        /// <summary>
-        /// Updates the positions and rotations of camera-related transforms based on head and camera poses.
+        /// Updates the camera anchor position and rotation based on the camera pose.
         /// </summary>
         private void UpdateCameraPoses()
         {
-            // Get current head pose
-            //var headPose = OVRPlugin.GetNodePoseStateImmediate(OVRPlugin.Node.Head).Pose.ToOVRPose();
-            
             // Update camera anchor position and rotation
             var cameraPose = m_passthroughCameraAccess.GetCameraPose();
             m_cameraAnchor.position = cameraPose.position;

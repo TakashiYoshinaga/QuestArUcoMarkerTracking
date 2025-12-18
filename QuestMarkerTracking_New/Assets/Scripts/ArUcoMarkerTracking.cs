@@ -90,7 +90,7 @@ namespace TryAR.MarkerTracking
         /// </summary>
         private Dictionary<int, PoseData> _prevPoseDataDictionary = new Dictionary<int, PoseData>();
 
-        Texture2D m_cameraTexture;
+        private Texture2D m_cameraTexture;
 
         /// <summary>
         /// Initialize the marker tracking system with camera parameters

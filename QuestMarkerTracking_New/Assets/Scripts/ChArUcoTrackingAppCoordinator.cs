@@ -1,13 +1,9 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-
+// Copyright (c) Takashi Yoshinaga. All rights reserved.
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using Meta.XR.Samples;
 using UnityEngine;
-using UnityEngine.Assertions;
-using PassthroughCameraSamples;
-using UnityEngine.UI;
+using Meta.XR;
 
 namespace TryAR.MarkerTracking
 {
@@ -35,47 +31,36 @@ namespace TryAR.MarkerTracking
             public GameObject gameObject;
         }
 
-        [Header("Camera Texture View")]
-        [SerializeField] private WebCamTextureManager m_webCamTextureManager;
-        private PassthroughCameraEye CameraEye => m_webCamTextureManager.Eye;
-        private Vector2Int CameraResolution => m_webCamTextureManager.RequestedResolution;
-        [SerializeField] private Transform m_cameraAnchor;
-   
-        [SerializeField] private Canvas m_cameraCanvas;
-        [SerializeField] private RawImage m_resultRawImage;
-        [SerializeField] private float m_canvasDistance = 1f;
-
+        [Header("Passthrough Camera")]
+        [SerializeField]
+        private PassthroughCameraAccess m_passthroughCameraAccess;
+        
         [Header("Marker Tracking")]
         [SerializeField] private ChArUcoMarkerTracking m_charucoMarkerTracking;
         [SerializeField, Tooltip("List of marker IDs mapped to their corresponding GameObjects")]
         private GameObject _arObject;
-        private bool m_showCameraCanvas = true;
+        [SerializeField] MeshRenderer m_debugRenderer;
 
+        private bool m_showRecogResult = false;
         private Texture2D m_resultTexture;
-
+        private Transform m_cameraAnchor;
+   
         /// <summary>
-        /// Initializes the camera, permissions, and marker tracking system.
+        /// Initializes the camera anchor, camera, and marker tracking system.
         /// </summary>
         private IEnumerator Start()
         {
-            // Validate required components
-            if (m_webCamTextureManager == null)
+            if(m_passthroughCameraAccess==null)
             {
-                Debug.LogError($"PCA: {nameof(m_webCamTextureManager)} field is required " +
-                            $"for the component {nameof(ChArUcoTrackingAppCoordinator)} to operate properly");
-                enabled = false;
+                Debug.LogError("PassthroughCameraAccess reference is missing.");
                 yield break;
             }
 
-            // Wait for camera permissions
-            Assert.IsFalse(m_webCamTextureManager.enabled);
-            yield return WaitForCameraPermission();
+            // Create camera anchor dynamically
+            CreateCameraAnchor();
 
             // Initialize camera
             yield return InitializeCamera();
-
-            // Configure UI and tracking components
-            ScaleCameraCanvas();
             
             //======================================================================================
             // CORE SETUP: Initialize the marker tracking system with camera parameters
@@ -85,19 +70,19 @@ namespace TryAR.MarkerTracking
             InitializeMarkerTracking();
             
             // Set initial visibility states
-            m_cameraCanvas.gameObject.SetActive(m_showCameraCanvas);
-            SetMarkerObjectsVisibility(!m_showCameraCanvas);
+            if(m_debugRenderer!=null){
+                m_debugRenderer.gameObject.SetActive(m_showRecogResult);
+            }
+            SetMarkerObjectsVisibility(!m_showRecogResult);
         }
 
         /// <summary>
-        /// Waits until camera permission is granted.
+        /// Creates a camera anchor GameObject dynamically at runtime.
         /// </summary>
-        private IEnumerator WaitForCameraPermission()
+        private void CreateCameraAnchor()
         {
-            while (PassthroughCameraPermissions.HasCameraPermission != true)
-            {
-                yield return null;
-            }
+            GameObject anchorObject = new GameObject("CameraAnchor");
+            m_cameraAnchor = anchorObject.transform;
         }
 
         /// <summary>
@@ -105,24 +90,20 @@ namespace TryAR.MarkerTracking
         /// </summary>
         private IEnumerator InitializeCamera()
         {
-            // Set the resolution and enable the camera manager
-            m_webCamTextureManager.RequestedResolution = PassthroughCameraUtils.GetCameraIntrinsics(CameraEye).Resolution;
-            m_webCamTextureManager.enabled = true;
-
-            // Wait until the camera texture is available
-            while(m_webCamTextureManager.WebCamTexture == null)
+            while (!m_passthroughCameraAccess.IsPlaying)
             {
                 yield return null;
             }
+            yield return null; // Wait one frame to ensure camera is fully initialized
         }
 
         /// <summary>
-        /// Updates camera poses, detects markers, and handles input for toggling visualization mode.
+        /// Updates camera poses, processes marker tracking, and handles input for toggling visualization mode.
         /// </summary>
         private void Update()
         {
             // Skip if camera or tracking system isn't ready
-            if (m_webCamTextureManager.WebCamTexture == null || !m_charucoMarkerTracking.IsReady)
+            if(m_passthroughCameraAccess==null || !m_passthroughCameraAccess.IsPlaying || !m_charucoMarkerTracking.IsReady)
                 return;
 
             // Toggle between camera view and AR visualization on button press
@@ -140,15 +121,18 @@ namespace TryAR.MarkerTracking
         }
 
         /// <summary>
-        /// Handles button input to toggle between camera view and AR visualization.
+        /// Handles button input to toggle between recognition result display and AR marker objects.
         /// </summary>
         private void HandleVisualizationToggle()
         {
+            if(m_debugRenderer==null)
+                return;
+
             if (OVRInput.GetDown(OVRInput.Button.One))
             {
-                m_showCameraCanvas = !m_showCameraCanvas;
-                m_cameraCanvas.gameObject.SetActive(m_showCameraCanvas);
-                SetMarkerObjectsVisibility(!m_showCameraCanvas);
+                m_showRecogResult = !m_showRecogResult;
+                m_debugRenderer.gameObject.SetActive(m_showRecogResult);
+                SetMarkerObjectsVisibility(!m_showRecogResult);
             }
         }
 
@@ -159,21 +143,21 @@ namespace TryAR.MarkerTracking
         /// </summary>
         private void ProcessMarkerTracking()
         {
-            // Step 1: Detect ArUco markers in the current camera frame
-            m_charucoMarkerTracking.DetectMarker(m_webCamTextureManager.WebCamTexture, m_resultTexture);
+            // Step 1: Detect ChArUco markers in the current camera frame
+            m_charucoMarkerTracking.DetectMarker(m_passthroughCameraAccess.GetTexture(), m_resultTexture);
             
-            // Step 2: Estimate the pose of markers and position 3D objects accordingly
+            // Step 2: Estimate the pose of the ChArUco board and position 3D object accordingly
             // This maps the 2D marker positions to 3D space using the camera parameters
             m_charucoMarkerTracking.EstimatePose(_arObject, m_cameraAnchor);
         }
 
         /// <summary>
-        /// Toggles the visibility of all marker-associated GameObjects in the dictionary.
+        /// Toggles the visibility of the marker-associated GameObject.
         /// </summary>
-        /// <param name="isVisible">Whether the marker objects should be visible or not.</param>
+        /// <param name="isVisible">Whether the marker object should be visible or not.</param>
         private void SetMarkerObjectsVisibility(bool isVisible)
         {
-            // Toggle visibility for all GameObjects in the marker dictionary
+            // Toggle visibility for the AR object
             if (_arObject != null)
             {
                 var rendererList = _arObject.GetComponentsInChildren<Renderer>(true);
@@ -185,26 +169,41 @@ namespace TryAR.MarkerTracking
         }
     
         /// <summary>
-        /// Initializes the marker tracking system with camera parameters and builds the marker dictionary.
-        /// This method configures the ArUco marker detection system with the correct camera parameters
-        /// for accurate pose estimation.
+        /// Initializes the ChArUco marker tracking system with camera parameters.
         /// </summary>
         private void InitializeMarkerTracking()
         {
-            // Step 1: Set up camera parameters for tracking
+            // Step 1: Get camera intrinsic parameters
             // These intrinsic parameters are essential for accurate marker pose estimation
-            var intrinsics = PassthroughCameraUtils.GetCameraIntrinsics(CameraEye);
+            var intrinsics = m_passthroughCameraAccess.Intrinsics;
             var cx = intrinsics.PrincipalPoint.x;  // Principal point X (optical center)
             var cy = intrinsics.PrincipalPoint.y;  // Principal point Y (optical center)
             var fx = intrinsics.FocalLength.x;     // Focal length X
             var fy = intrinsics.FocalLength.y;     // Focal length Y
-            var width = intrinsics.Resolution.x;   // Image width
-            var height = intrinsics.Resolution.y;  // Image height
+            var width = intrinsics.SensorResolution.x;   // Image width
+            var height = intrinsics.SensorResolution.y;  // Image height
             
-            // Initialize the ArUco tracking with camera parameters
+            // Step 2: Scale parameters to match current camera resolution
+            var currentResolution = m_passthroughCameraAccess.CurrentResolution;
+            Debug.Log($"Camera Intrinsics - fx: {fx}, fy: {fy}, cx: {cx}, cy: {cy}, width: {width}, height: {height}");
+            Debug.Log($"Current Camera Resolution - width: {currentResolution.x}, height: {currentResolution.y}");
+            
+            if (currentResolution.x != width || currentResolution.y != height)
+            {
+                float scaleX = (float)currentResolution.x / width;
+                float scaleY = (float)currentResolution.y / height;
+                fx *= scaleX;
+                fy *= scaleY;
+                cx *= scaleX;
+                cy *= scaleY;
+                width = currentResolution.x;
+                height = currentResolution.y;
+            }
+      
+            // Step 3: Initialize the ChArUco tracking with camera parameters
             m_charucoMarkerTracking.Initialize(width, height, cx, cy, fx, fy);
             
-            // Step 2: Set up texture for visualization
+            // Step 4: Set up texture for visualization
             ConfigureResultTexture(width, height);
         }
 
@@ -219,44 +218,21 @@ namespace TryAR.MarkerTracking
         {
             int divideNumber = m_charucoMarkerTracking.DivideNumber;
             m_resultTexture = new Texture2D(width/divideNumber, height/divideNumber, TextureFormat.RGB24, false);
-            m_resultRawImage.texture = m_resultTexture;
+            if (m_debugRenderer != null)
+            {
+                m_debugRenderer.material.mainTexture = m_resultTexture;
+            }
         }
 
         /// <summary>
-        /// Calculates the dimensions of the canvas based on the distance from the camera origin and the camera resolution.
-        /// </summary>
-        private void ScaleCameraCanvas()
-        {
-            var cameraCanvasRectTransform = m_cameraCanvas.GetComponentInChildren<RectTransform>();
-            
-            // Calculate field of view based on camera parameters
-            var leftSidePointInCamera = PassthroughCameraUtils.ScreenPointToRayInCamera(CameraEye, new Vector2Int(0, CameraResolution.y / 2));
-            var rightSidePointInCamera = PassthroughCameraUtils.ScreenPointToRayInCamera(CameraEye, new Vector2Int(CameraResolution.x, CameraResolution.y / 2));
-            var horizontalFoVDegrees = Vector3.Angle(leftSidePointInCamera.direction, rightSidePointInCamera.direction);
-            var horizontalFoVRadians = horizontalFoVDegrees / 180 * Math.PI;
-            
-            // Calculate canvas size to match camera view
-            var newCanvasWidthInMeters = 2 * m_canvasDistance * Math.Tan(horizontalFoVRadians / 2);
-            var localScale = (float)(newCanvasWidthInMeters / cameraCanvasRectTransform.sizeDelta.x);
-            cameraCanvasRectTransform.localScale = new Vector3(localScale, localScale, localScale);
-        }
-
-        /// <summary>
-        /// Updates the positions and rotations of camera-related transforms based on head and camera poses.
+        /// Updates the camera anchor position and rotation based on the camera pose.
         /// </summary>
         private void UpdateCameraPoses()
         {
-            // Get current head pose
-            var headPose = OVRPlugin.GetNodePoseStateImmediate(OVRPlugin.Node.Head).Pose.ToOVRPose();
-            
             // Update camera anchor position and rotation
-            var cameraPose = PassthroughCameraUtils.GetCameraPoseInWorld(CameraEye);
+            var cameraPose = m_passthroughCameraAccess.GetCameraPose();
             m_cameraAnchor.position = cameraPose.position;
             m_cameraAnchor.rotation = cameraPose.rotation;
-
-            // Position the canvas in front of the camera
-            m_cameraCanvas.transform.position = cameraPose.position + cameraPose.rotation * Vector3.forward * m_canvasDistance;
-            m_cameraCanvas.transform.rotation = cameraPose.rotation;
         }
     }
 }

@@ -120,6 +120,9 @@ namespace TryAR.MarkerTracking
         /// </summary>
         private PoseData _prevPoseData = new PoseData();
 
+        private Texture2D m_cameraTexture;
+
+
         /// <summary>
         /// Initialize the marker tracking system with camera parameters
         /// </summary>
@@ -199,6 +202,9 @@ namespace TryAR.MarkerTracking
             // Create the ChArUco detector
             _charucoDetector = new CharucoDetector(_charucoBoard, charucoParameters, detectorParams, refineParameters);
 
+            // Initialize texture2d
+            m_cameraTexture = new Texture2D(originalWidth, originalHeight, TextureFormat.RGBA32, false);
+
             _isReady = true;
         }
 
@@ -265,7 +271,7 @@ namespace TryAR.MarkerTracking
         /// </summary>
         /// <param name="webCamTexture">Input webcam texture</param>
         /// <param name="resultTexture">Optional output texture for visualization</param>
-        public void DetectMarker(WebCamTexture webCamTexture, Texture2D resultTexture = null)
+        public void DetectMarker(Texture webCamTexture, Texture2D resultTexture = null)
         {
             if (_isReady)
             {
@@ -274,8 +280,10 @@ namespace TryAR.MarkerTracking
                     return;
                 }
                 
-                // Get image from webcam at full size
-                Utils.webCamTextureToMat(webCamTexture, _originalWebcamMat);
+                 // Get image from webcam at full size
+                //Utils.webCamTextureToMat(webCamTexture, _originalWebcamMat);
+                Utils.textureToTexture2D(webCamTexture, m_cameraTexture);
+                Utils.texture2DToMat(m_cameraTexture, _originalWebcamMat);
                 
                 // Resize for processing
                 Imgproc.resize(_originalWebcamMat, _halfSizeMat, _halfSizeMat.size());
