@@ -51,7 +51,7 @@ namespace TryAR.MarkerTracking
         private Mat _processingRgbMat;
 
         /// <summary>
-        /// Full-size RGBA mat from original webcam image.
+        /// Full-size RGBA mat from camera texture.
         /// </summary>
         private Mat _originalWebcamMat;
         
@@ -90,6 +90,9 @@ namespace TryAR.MarkerTracking
         /// </summary>
         private Dictionary<int, PoseData> _prevPoseDataDictionary = new Dictionary<int, PoseData>();
 
+        /// <summary>
+        /// Temporary Texture2D for converting camera texture to OpenCV Mat.
+        /// </summary>
         private Texture2D m_cameraTexture;
 
         /// <summary>
@@ -158,7 +161,7 @@ namespace TryAR.MarkerTracking
             // Create the ArUco detector
             arucoDetector = new ArucoDetector(markerDictionary, detectorParams, refineParameters);
 
-            // Initialize texture2d
+            // Initialize temporary texture for camera texture conversion
             m_cameraTexture = new Texture2D(originalWidth, originalHeight, TextureFormat.RGBA32, false);
 
             _isReady = true;
@@ -226,8 +229,7 @@ namespace TryAR.MarkerTracking
                     return;
                 }
                 
-                // Get image from webcam at full size
-                //Utils.webCamTextureToMat(webCamTexture, _originalWebcamMat);
+                // Convert camera texture to OpenCV Mat
                 Utils.textureToTexture2D(webCamTexture, m_cameraTexture);
                 Utils.texture2DToMat(m_cameraTexture, _originalWebcamMat);
                 

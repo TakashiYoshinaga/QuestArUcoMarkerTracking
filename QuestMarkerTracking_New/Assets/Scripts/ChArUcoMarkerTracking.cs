@@ -71,7 +71,7 @@ namespace TryAR.MarkerTracking
         private Mat _processingRgbMat;
 
         /// <summary>
-        /// Full-size RGBA mat from original webcam image.
+        /// Full-size RGBA mat from camera texture.
         /// </summary>
         private Mat _originalWebcamMat;
         
@@ -120,6 +120,9 @@ namespace TryAR.MarkerTracking
         /// </summary>
         private PoseData _prevPoseData = new PoseData();
 
+        /// <summary>
+        /// Temporary Texture2D for converting camera texture to OpenCV Mat.
+        /// </summary>
         private Texture2D m_cameraTexture;
 
 
@@ -202,7 +205,7 @@ namespace TryAR.MarkerTracking
             // Create the ChArUco detector
             _charucoDetector = new CharucoDetector(_charucoBoard, charucoParameters, detectorParams, refineParameters);
 
-            // Initialize texture2d
+            // Initialize temporary texture for camera texture conversion
             m_cameraTexture = new Texture2D(originalWidth, originalHeight, TextureFormat.RGBA32, false);
 
             _isReady = true;
@@ -280,8 +283,7 @@ namespace TryAR.MarkerTracking
                     return;
                 }
                 
-                 // Get image from webcam at full size
-                //Utils.webCamTextureToMat(webCamTexture, _originalWebcamMat);
+                // Convert camera texture to OpenCV Mat
                 Utils.textureToTexture2D(webCamTexture, m_cameraTexture);
                 Utils.texture2DToMat(m_cameraTexture, _originalWebcamMat);
                 
@@ -374,7 +376,7 @@ namespace TryAR.MarkerTracking
                     tvec.get(0, 0, tvecArr);
                     PoseData poseData = ARUtils.ConvertRvecTvecToPoseData(rvecArr, tvecArr);
                     
-                    // z軸の向きをArUcoと一致させるためにx軸周りに180度回転
+                    // Rotate 180 degrees around X-axis to align Z-axis direction with ArUco coordinate system
                     poseData.rot = poseData.rot * Quaternion.Euler(180, 0, 0);
                     
                     // Apply low-pass filter if we have previous pose data
