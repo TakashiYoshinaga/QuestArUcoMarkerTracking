@@ -72,6 +72,6 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
-QuestMarkerTracking/Assets/OpenCVForUnity
-QuestMarkerTracking/Assets/OpenCVForUnity.meta
+/[Aa]ssets/OpenCVForUnity
+/[Aa]ssets/OpenCVForUnity.meta
 .DS_Store
