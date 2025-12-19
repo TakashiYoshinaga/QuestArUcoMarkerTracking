@@ -34,7 +34,7 @@ This project uses **OpenCV for Unity**.
 Please **PURCHASE** and install it from the Unity Asset Store:  
 [OpenCV for Unity](https://assetstore.unity.com/packages/tools/integration/opencv-for-unity-21088?locale=en-US)
 
-Tested with **OpenCV for Unity v2.6.5**.
+Tested with **OpenCV for Unity v3.0.0**.
 
 ### SDK Requirements
 - **QuestMarkerTracking_New**: Meta XR SDK v83 or later (for Passthrough Camera Access support)
