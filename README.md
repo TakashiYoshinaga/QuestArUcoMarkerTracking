@@ -115,3 +115,8 @@ If you have any questions, feel free to reach out:
 - **X (Twitter)**:  
   - [@Tks_Yoshinaga](https://x.com/Tks_Yoshinaga)  
 - **LinkedIn**: [Tks Yoshinaga](https://www.linkedin.com/in/tks-yoshinaga/)  
+
+## Support
+
+If you find this project useful, you can support me via PayPal:  
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/TakashiYoshinaga)  
