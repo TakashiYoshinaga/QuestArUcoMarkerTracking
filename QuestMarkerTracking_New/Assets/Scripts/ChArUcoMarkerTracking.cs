@@ -2,8 +2,9 @@ using OpenCVForUnity.Calib3dModule;
 using OpenCVForUnity.CoreModule;
 using OpenCVForUnity.ImgprocModule;
 using OpenCVForUnity.ObjdetectModule;
-using OpenCVForUnity.UnityUtils;
-using OpenCVForUnity.UnityUtils.Helper;
+using OpenCVForUnity.UnityIntegration;
+using OpenCVForUnity.UnityIntegration.Helper.Source2Mat;
+using static OpenCVForUnity.UnityIntegration.OpenCVARUtils;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -284,8 +285,8 @@ namespace TryAR.MarkerTracking
                 }
                 
                 // Convert camera texture to OpenCV Mat
-                Utils.textureToTexture2D(webCamTexture, m_cameraTexture);
-                Utils.texture2DToMat(m_cameraTexture, _originalWebcamMat);
+                OpenCVMatUtils.TextureToTexture2D(webCamTexture, m_cameraTexture);
+                OpenCVMatUtils.Texture2DToMat(m_cameraTexture, _originalWebcamMat);
                 
                 // Resize for processing
                 Imgproc.resize(_originalWebcamMat, _halfSizeMat, _halfSizeMat.size());
@@ -323,7 +324,7 @@ namespace TryAR.MarkerTracking
                 // Update result texture for visualization
                 if (resultTexture != null)
                 {
-                    Utils.matToTexture2D(_processingRgbMat, resultTexture);
+                    OpenCVMatUtils.MatToTexture2D(_processingRgbMat, resultTexture);
                 }
             }
         }
@@ -374,30 +375,30 @@ namespace TryAR.MarkerTracking
                     rvec.get(0, 0, rvecArr);
                     double[] tvecArr = new double[3];
                     tvec.get(0, 0, tvecArr);
-                    PoseData poseData = ARUtils.ConvertRvecTvecToPoseData(rvecArr, tvecArr);
+                    PoseData poseData = OpenCVARUtils.ConvertRvecTvecToPoseData(rvecArr, tvecArr);
                     
                     // Rotate 180 degrees around X-axis to align Z-axis direction with ArUco coordinate system
-                    poseData.rot = poseData.rot * Quaternion.Euler(180, 0, 0);
+                    poseData.Rot = poseData.Rot * Quaternion.Euler(180, 0, 0);
                     
                     // Apply low-pass filter if we have previous pose data
-                    if (_prevPoseData.pos != Vector3.zero)
+                    if (_prevPoseData.Pos != Vector3.zero)
                     {
                         float t = _poseFilterCoefficient;
                         
                         // Filter position with linear interpolation
-                        poseData.pos = Vector3.Lerp(poseData.pos, _prevPoseData.pos, t);
+                        poseData.Pos = Vector3.Lerp(poseData.Pos, _prevPoseData.Pos, t);
                         
                         // Filter rotation with spherical interpolation
-                        poseData.rot = Quaternion.Slerp(poseData.rot, _prevPoseData.rot, t);
+                        poseData.Rot = Quaternion.Slerp(poseData.Rot, _prevPoseData.Rot, t);
                     }
                     
                     // Store current pose for next frame
                     _prevPoseData = poseData;
                     
                     // Convert pose to matrix and apply to game object
-                    var arMatrix = ARUtils.ConvertPoseDataToMatrix(ref poseData, true);
+                    var arMatrix = OpenCVARUtils.ConvertPoseDataToMatrix(ref poseData, true);
                     arMatrix = camTransform.localToWorldMatrix * arMatrix;
-                    ARUtils.SetTransformFromMatrix(targetObject.transform, ref arMatrix);
+                    OpenCVARUtils.SetTransformFromMatrix(targetObject.transform, ref arMatrix);
                 }
                 catch (CvException e)
                 {
