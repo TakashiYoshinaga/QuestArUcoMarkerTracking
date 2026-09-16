@@ -34,10 +34,19 @@ This project uses **OpenCV for Unity**.
 Please **PURCHASE** and install it from the Unity Asset Store:  
 [OpenCV for Unity](https://assetstore.unity.com/packages/tools/integration/opencv-for-unity-21088?locale=en-US)
 
-Alternatively, you can download a free trial (Editor-only functionality):
-[EnoxSoftware/OpenCVForUnity](https://github.com/EnoxSoftware/OpenCVForUnity/releases)
+Tested with **OpenCV for Unity v3.0.3**.  
+**v3.0.3 or later is required.** OpenCV for Unity renamed its namespaces and class names
+(`OpenCVForUnity.UnityUtils` → `OpenCVForUnity.UnityIntegration`, `Utils` → `OpenCVMatUtils`, `ARUtils` → `OpenCVARUtils`),
+so this project will **not compile** with older versions.  
+If you need to use OpenCV for Unity **v3.0.0 or earlier**, please use the
+[v1.0.0 release](https://github.com/TakashiYoshinaga/QuestArUcoMarkerTracking/releases/tag/v1.0.0)
+of this repository, which targets the previous API.
 
-Tested with **OpenCV for Unity v3.0.3**.
+> **Want to try it before purchasing?**  
+> A [free trial version](https://github.com/EnoxSoftware/OpenCVForUnity/releases) is available for evaluation.  
+> It works **only inside the Unity Editor** and cannot be built to a Quest device, but you can still run the project in the Editor over **Quest Link** and see how the marker tracking actually behaves before you decide to buy.  
+> Note that this requires a Meta XR SDK version that supports camera access via Link (see **SDK Requirements** below).  
+> To deploy to an actual Quest device, the paid version from the Asset Store is required.
 
 ### SDK Requirements
 - **QuestMarkerTracking_New**: Meta XR SDK v85 or later (for Passthrough Camera Access support via Link)
