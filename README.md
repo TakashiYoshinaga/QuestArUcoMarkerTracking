@@ -5,12 +5,13 @@ It provides sample scenes that support both ArUco(Single/Multi) and ChArUco(Sing
 
 ## Project Structure
 
-This repository contains two versions of the project:
+The Unity project is located in the **QuestMarkerTracking** folder.  
+It uses the **Passthrough Camera Access** component of the Meta XR SDK to obtain the camera image directly.
 
-- **QuestMarkerTracking_New**: Uses the **Passthrough Camera Access** component introduced in Meta XR SDK v83 for simpler camera image access.
+> **Looking for the WebCamTexture-based version?**  
+> The older `QuestMarkerTracking_Old` project has been removed from this repository.  
+> If you still need it, it is available in the [v1.0.0 release](https://github.com/TakashiYoshinaga/QuestArUcoMarkerTracking/releases/tag/v1.0.0).
 
-- **QuestMarkerTracking_Old**: Uses the previous **WebCamTexture**-based approach.  
-  
 For a demonstration, check out the following videos:
 
 - **Single Marker Tracking Demo (ArUco)**  
@@ -49,17 +50,16 @@ of this repository, which targets the previous API.
 > To deploy to an actual Quest device, the paid version from the Asset Store is required.
 
 ### SDK Requirements
-- **QuestMarkerTracking_New**: Meta XR SDK v85 or later (for Passthrough Camera Access support via Link)
-- **QuestMarkerTracking_Old**: Compatible with earlier versions of Meta XR SDK
+- **Unity**: `6000.3.2f1`
+- **Meta XR SDK**: `com.meta.xr.sdk.all` **v205 or later**  
+  Required for Passthrough Camera Access. Earlier versions do not allow camera access over **Quest Link**, so v205 or later is also needed to run the project in the Editor.
 
 ---
 
 ## Usage
 
-### Selecting a Project Version
-Choose the appropriate project folder based on your requirements:
-- Open **QuestMarkerTracking_New** for the latest implementation using Passthrough Camera Access
-- Open **QuestMarkerTracking_Old** for the WebCamTexture-based approach
+### Opening the Project
+Open the **QuestMarkerTracking** folder as a Unity project.
 
 ### Marker Preparation
 To use this project, please download and install the required marker files from the following links:
@@ -68,10 +68,11 @@ To use this project, please download and install the required marker files from 
 - **ChArUco Marker**: [ChArUcoMarker.pdf](https://github.com/TakashiYoshinaga/QuestArUcoMarkerTracking/blob/main/ChArUcoMarker.pdf)
 
 ### Unity Scenes
-Both project versions contain the following scenes:
+The project contains the following scenes:
 
-- **ArUco Marker Tracking (Single & Multi)**: `ArUcoMarkerTracking.unity`  
-- **ChArUco Marker Tracking**: `ChArUcoMarkerTracking.unity`
+- **Camera Access Test**: `0 - CameraAccessTest.unity`  
+- **ArUco Marker Tracking (Single & Multi)**: `1 - ArUcoMarkerTracking.unity`  
+- **ChArUco Marker Tracking**: `2 - ChArUcoMarkerTracking.unity`
 
 ### Default Settings
 
@@ -95,7 +96,7 @@ You can switch the view mode by pressing the **A button** on the controller.
 
 If you want to track multiple ArUco markers simultaneously or change the number of markers in the scene, follow these steps. 
 
-1. Open the **ArUcoMarkerTracking.unity** scene and select the `ArUcoTrackingAppCoordinator` GameObject.  
+1. Open the **1 - ArUcoMarkerTracking.unity** scene and select the `ArUcoTrackingAppCoordinator` GameObject.  
 2. In the **Inspector**, locate the **ArUcoMarkerTrackingAppCoordinator** component and find the `MarkerGameObjectPairs` array.  
 3. Change the size of this array to match the **number of markers** you want to use.  
 4. For each **Element**, specify:  
